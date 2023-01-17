@@ -14,7 +14,7 @@ blogPostRouter.get("/", async (req, res, next) => {
 
 blogPostRouter.post("/", async (req, res, next) => {
   try {
-    const newBlogPost = new BlogModel(re.body);
+    const newBlogPost = new BlogModel(req.body);
     const { _id } = await newBlogPost.save();
     res.status(201).send({ _id });
   } catch (error) {
@@ -39,7 +39,7 @@ blogPostRouter.get("/:blogPostId", async (req, res, next) => {
   }
 });
 
-blogPostRouter.put("/", async (req, res, next) => {
+blogPostRouter.put("/:blogPostId", async (req, res, next) => {
   try {
     const updatedBlogPost = await BlogModel.findByIdAndUpdate(
       req.params.blogPostId,
@@ -61,10 +61,10 @@ blogPostRouter.put("/", async (req, res, next) => {
   }
 });
 
-blogPostRouter.delete("/", async (req, res, next) => {
+blogPostRouter.delete("/:blogPostId", async (req, res, next) => {
   try {
     const deletedBlogPost = await BlogModel.findByIdAndDelete(
-      req.params.blogPost
+      req.params.blogPostId
     );
     if (deletedBlogPost) {
       res.status(204).send("deleted");
