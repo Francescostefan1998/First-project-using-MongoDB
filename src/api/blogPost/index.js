@@ -2,6 +2,7 @@ import express from "express";
 import createHttpError from "http-errors";
 import BlogModel from "./model.js";
 import CommentModel from "../comments/model.js";
+import mongoose from "mongoose";
 const blogPostRouter = express.Router();
 
 blogPostRouter.get("/", async (req, res, next) => {
@@ -130,8 +131,8 @@ blogPostRouter.get(
       const blogPost = await BlogModel.findById(req.params.blogPostId);
       if (blogPost) {
         console.log(blogPost);
-        console.log(blogPost.comments[3]._id);
-        console.log(blogPost.comments[3]._id.toString());
+        console.log(blogPost.comments[0]._id);
+        console.log(blogPost.comments[0]._id.toString());
         const comment = blogPost.comments.find(
           (comment) => comment._id.toString() === req.params.commentId
         );
@@ -173,7 +174,7 @@ blogPostRouter.put(
         console.log(req.body);
         if (index !== -1) {
           blogPost.comments[index] = {
-            ...blogPost.comments[index].toObject(),
+            ...blogPost.comments[index],
             ...req.body,
           };
           await blogPost.save();
@@ -203,9 +204,14 @@ blogPostRouter.delete(
   "/:blogPostId/comments/:commentId",
   async (req, res, next) => {
     try {
+      console.log("delete triggered");
       const updatedBlogPost = await BlogModel.findByIdAndUpdate(
         req.params.blogPostId,
-        { $pull: { comments: { _id: req.params.commentId } } },
+        {
+          $pull: {
+            comments: { _id: mongoose.Types.ObjectId(req.params.commentId) },
+          },
+        },
         { new: true }
       );
 

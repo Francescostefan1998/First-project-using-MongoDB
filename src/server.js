@@ -16,7 +16,7 @@ const port = process.env.PORT || 3001;
 server.use(cors());
 server.use(express.json());
 server.use("/blogs", blogPostRouter);
-server.use("/blogs/:blogPostId/comments", commentRouter);
+//server.use("/blogs/:blogPostId/comments", commentRouter);
 server.use(badRequestHandler);
 server.use(notFoundHandler);
 server.use(genericErrorHandler);
