@@ -1,6 +1,7 @@
 import express from "express";
 import createHttpError from "http-errors";
 import BlogModel from "./model.js";
+import CommentModel from "../comments/model.js";
 const blogPostRouter = express.Router();
 
 blogPostRouter.get("/", async (req, res, next) => {
@@ -80,5 +81,148 @@ blogPostRouter.delete("/:blogPostId", async (req, res, next) => {
     next(error);
   }
 });
+
+blogPostRouter.post("/:blogPostId/comments", async (req, res, next) => {
+  try {
+    const blogPost = await BlogModel.findById(req.params.blogPostId);
+    if (blogPost) {
+      const newComment = new CommentModel(req.body);
+      const { _id } = await newComment.save();
+      const updatedBlogPost = await BlogModel.findByIdAndUpdate(
+        req.params.blogPostId,
+        { $push: { comments: newComment } },
+        { new: true, runValidators: true }
+      );
+      res.status(201).send({ _id });
+    } else {
+      next(
+        createHttpError(
+          404,
+          `BlogPost with Id ${req.params.blogPostId} not found`
+        )
+      );
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+blogPostRouter.get("/:blogPostId/comments", async (req, res, next) => {
+  try {
+    const blogPost = await BlogModel.findById(req.params.blogPostId);
+    if (blogPost) {
+      res.send(blogPost.comments);
+    } else {
+      next(
+        createHttpError(
+          404,
+          `BlogPost with Id ${req.params.blogPostId} not found`
+        )
+      );
+    }
+  } catch (error) {
+    next(error);
+  }
+});
+blogPostRouter.get(
+  "/:blogPostId/comments/:commentId",
+  async (req, res, next) => {
+    try {
+      const blogPost = await BlogModel.findById(req.params.blogPostId);
+      if (blogPost) {
+        console.log(blogPost);
+        console.log(blogPost.comments[3]._id);
+        console.log(blogPost.comments[3]._id.toString());
+        const comment = blogPost.comments.find(
+          (comment) => comment._id.toString() === req.params.commentId
+        );
+        console.log(comment);
+        if (comment) {
+          res.send(comment);
+        } else {
+          next(
+            createHttpError(
+              404,
+              `Comment with Id ${req.params.commentId} not found`
+            )
+          );
+        }
+      } else {
+        next(
+          createHttpError(
+            404,
+            `BlogPost with Id ${req.params.blogPostId} not found`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+blogPostRouter.put(
+  "/:blogPostId/comments/:commentId",
+  async (req, res, next) => {
+    try {
+      const blogPost = await BlogModel.findById(req.params.blogPostId);
+      if (blogPost) {
+        const index = blogPost.comments.findIndex(
+          (comment) => comment._id.toString() === req.params.commentId
+        );
+        console.log(index);
+        console.log(blogPost.comments[index]);
+        console.log(req.body);
+        if (index !== -1) {
+          blogPost.comments[index] = {
+            ...blogPost.comments[index].toObject(),
+            ...req.body,
+          };
+          await blogPost.save();
+          res.send(blogPost);
+        } else {
+          next(
+            createHttpError(
+              404,
+              `comment with Id ${req.params.commentId} not found`
+            )
+          );
+        }
+      } else {
+        next(
+          createHttpError(
+            404,
+            `BlogPost with Id ${req.params.blogPostId} not found`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+blogPostRouter.delete(
+  "/:blogPostId/comments/:commentId",
+  async (req, res, next) => {
+    try {
+      const updatedBlogPost = await BlogModel.findByIdAndUpdate(
+        req.params.blogPostId,
+        { $pull: { comments: { _id: req.params.commentId } } },
+        { new: true }
+      );
+
+      if (updatedBlogPost) {
+        res.send(updatedBlogPost);
+      } else {
+        next(
+          createHttpError(
+            404,
+            `BlogPost with Id ${req.params.blogPostId} not found`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export default blogPostRouter;

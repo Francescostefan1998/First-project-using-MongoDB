@@ -16,6 +16,7 @@ const blogSchema = new Schema(
       avatar: { type: String, required: true },
     },
     content: { type: String, required: true },
+    comments: { type: Array, required: true },
   },
   {
     timestamps: true,
