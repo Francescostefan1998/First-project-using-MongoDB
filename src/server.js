@@ -10,12 +10,15 @@ import {
 import blogPostRouter from "./api/blogPost/index.js";
 import commentRouter from "./api/comments/index.js";
 import authoorsRouter from "./api/authors/index.js";
+import userRouter from "./api/user/index.js";
 const server = express();
 const port = process.env.PORT || 3001;
 
 server.use(cors());
 server.use(express.json());
 server.use("/blogs", blogPostRouter);
+server.use("/users", userRouter);
+
 server.use("/authors", authoorsRouter); // author)
 //server.use("/blogs/:blogPostId/comments", commentRouter);
 server.use(badRequestHandler);

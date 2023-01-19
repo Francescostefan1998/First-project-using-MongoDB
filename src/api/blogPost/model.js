@@ -12,6 +12,7 @@ const blogSchema = new Schema(
       unit: { type: Number, required: true },
     },
     authors: [{ type: Schema.Types.ObjectId, ref: "Author" }],
+    like: [{ type: Schema.Types.ObjectId, ref: "User" }],
 
     content: { type: String, required: true },
     comments: { type: Array, required: true },
@@ -27,7 +28,10 @@ blogSchema.static("findBlogsWithAuthors", async function (query) {
     .limit(query.options.limit)
     .skip(query.options.skip)
     .sort(query.options.sort)
-    .populate({ path: "authors", select: "firstName lastName" });
+    .populate({
+      path: "authors like",
+      select: "firstName lastName",
+    });
 
   return { total, blogs };
 });

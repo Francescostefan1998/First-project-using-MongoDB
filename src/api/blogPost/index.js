@@ -8,6 +8,7 @@ const blogPostRouter = express.Router();
 
 blogPostRouter.get("/", async (req, res, next) => {
   try {
+    console.log("get triggered");
     const mongoQuery = q2m(req.query);
     const { total, blogs } = await BlogModel.findBlogsWithAuthors(mongoQuery);
     res.send({
