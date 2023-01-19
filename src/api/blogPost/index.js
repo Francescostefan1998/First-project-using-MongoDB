@@ -3,12 +3,19 @@ import createHttpError from "http-errors";
 import BlogModel from "./model.js";
 import CommentModel from "../comments/model.js";
 import mongoose from "mongoose";
+import q2m from "query-to-mongo";
 const blogPostRouter = express.Router();
 
 blogPostRouter.get("/", async (req, res, next) => {
   try {
-    const blogs = await BlogModel.find();
-    res.send(blogs);
+    const mongoQuery = q2m(req.query);
+    const { total, blogs } = await BlogModel.findBlogsWithAuthors(mongoQuery);
+    res.send({
+      links: mongoQuery.links("https://localhost:3001/blogs", total),
+      total,
+      totalPages: Math.ceil(total / mongoQuery.options.limit),
+      blogs,
+    });
   } catch (error) {
     next(error);
   }
@@ -19,23 +26,6 @@ blogPostRouter.post("/", async (req, res, next) => {
     const newBlogPost = new BlogModel(req.body);
     const { _id } = await newBlogPost.save();
     res.status(201).send({ _id });
-  } catch (error) {
-    next(error);
-  }
-});
-blogPostRouter.get("/:blogPostId", async (req, res, next) => {
-  try {
-    const blogPost = await BlogModel.findById(req.params.blogPostId);
-    if (blogPost) {
-      res.send(blogPost);
-    } else {
-      next(
-        createHttpError(
-          404,
-          `BlogPost wit id ${req.params.blogPostId} not found`
-        )
-      );
-    }
   } catch (error) {
     next(error);
   }
@@ -170,8 +160,6 @@ blogPostRouter.put(
           (comment) => comment._id.toString() === req.params.commentId
         );
         console.log(index);
-        console.log(blogPost.comments[index]);
-        console.log(req.body);
         if (index !== -1) {
           blogPost.comments[index] = {
             ...blogPost.comments[index],
@@ -230,5 +218,26 @@ blogPostRouter.delete(
     }
   }
 );
+
+blogPostRouter.get("/:blogPostId", async (req, res, next) => {
+  try {
+    const blogPost = await BlogModel.findById(req.params.blogPostId).populate({
+      path: "authors",
+      select: "firstName lastName",
+    });
+    if (blogPost) {
+      res.send(blogPost);
+    } else {
+      next(
+        createHttpError(
+          404,
+          `BlogPost wit id ${req.params.blogPostId} not found`
+        )
+      );
+    }
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default blogPostRouter;

@@ -8,6 +8,7 @@ const commentSchema = new Schema(
     title: { type: String, required: true },
     rate: { type: Number, required: true },
     name: { type: String, required: true },
+    authors: [{ type: Schema.Types.ObjectId, ref: "Author" }],
   },
   {
     timestamps: true,

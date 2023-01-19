@@ -11,10 +11,8 @@ const blogSchema = new Schema(
       value: { type: Number, required: true },
       unit: { type: Number, required: true },
     },
-    author: {
-      name: { type: String, required: true },
-      avatar: { type: String, required: true },
-    },
+    authors: [{ type: Schema.Types.ObjectId, ref: "Author" }],
+
     content: { type: String, required: true },
     comments: { type: Array, required: true },
   },
@@ -22,5 +20,16 @@ const blogSchema = new Schema(
     timestamps: true,
   }
 );
+
+blogSchema.static("findBlogsWithAuthors", async function (query) {
+  const total = await this.countDocuments(query.criteria);
+  const blogs = await this.find(query.criteria, query.criteria.fields)
+    .limit(query.options.limit)
+    .skip(query.options.skip)
+    .sort(query.options.sort)
+    .populate({ path: "authors", select: "firstName lastName" });
+
+  return { total, blogs };
+});
 
 export default model("Blog", blogSchema);
