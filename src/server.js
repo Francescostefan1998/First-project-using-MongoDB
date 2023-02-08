@@ -3,6 +3,7 @@ import listEndpoints from "express-list-endpoints";
 import cors from "cors";
 import mongoose from "mongoose";
 import {
+  unauthorizedErrorHandler,
   badRequestHandler,
   notFoundHandler,
   genericErrorHandler,
@@ -21,6 +22,8 @@ server.use("/users", userRouter);
 
 server.use("/authors", authoorsRouter); // author)
 //server.use("/blogs/:blogPostId/comments", commentRouter);
+
+server.use(unauthorizedErrorHandler);
 server.use(badRequestHandler);
 server.use(notFoundHandler);
 server.use(genericErrorHandler);

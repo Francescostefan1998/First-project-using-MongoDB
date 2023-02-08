@@ -2,11 +2,16 @@ import express from "express";
 import createHttpError from "http-errors";
 import BlogModel from "./model.js";
 import CommentModel from "../comments/model.js";
+import { adminOnlyMiddleware } from "../../lib/auth/adminOnly.js";
+import { JWTAuthMiddleware } from "../../lib/auth/jwtAuth.js";
+import { commentCreatorMiddleware } from "../../lib/auth/commentCreator.js";
+import { createAccessToken } from "../../lib/auth/tools.js";
+
 import mongoose from "mongoose";
 import q2m from "query-to-mongo";
 const blogPostRouter = express.Router();
 
-blogPostRouter.get("/", async (req, res, next) => {
+blogPostRouter.get("/", JWTAuthMiddleware, async (req, res, next) => {
   try {
     console.log("get triggered");
     const mongoQuery = q2m(req.query);
@@ -22,7 +27,7 @@ blogPostRouter.get("/", async (req, res, next) => {
   }
 });
 
-blogPostRouter.post("/", async (req, res, next) => {
+blogPostRouter.post("/", JWTAuthMiddleware, async (req, res, next) => {
   try {
     const newBlogPost = new BlogModel(req.body);
     const { _id } = await newBlogPost.save();
@@ -32,89 +37,107 @@ blogPostRouter.post("/", async (req, res, next) => {
   }
 });
 
-blogPostRouter.put("/:blogPostId", async (req, res, next) => {
-  try {
-    const updatedBlogPost = await BlogModel.findByIdAndUpdate(
-      req.params.blogPostId,
-      req.body,
-      { new: true, runValidators: true }
-    );
-    if (updatedBlogPost) {
-      res.send(updatedBlogPost);
-    } else {
-      next(
-        createHttpError(
-          404,
-          `BlogPost wit id ${req.params.blogPostId} not found`
-        )
-      );
-    }
-  } catch (error) {
-    next(error);
-  }
-});
+blogPostRouter.put(
+  "/:blogPostId",
+  JWTAuthMiddleware,
 
-blogPostRouter.delete("/:blogPostId", async (req, res, next) => {
-  try {
-    const deletedBlogPost = await BlogModel.findByIdAndDelete(
-      req.params.blogPostId
-    );
-    if (deletedBlogPost) {
-      res.status(204).send("deleted");
-    } else {
-      next(
-        createHttpError(
-          404,
-          `BlogPost wit id ${req.params.blogPostId} not found`
-        )
-      );
-    }
-  } catch (error) {
-    next(error);
-  }
-});
-
-blogPostRouter.post("/:blogPostId/comments", async (req, res, next) => {
-  try {
-    const blogPost = await BlogModel.findById(req.params.blogPostId);
-    if (blogPost) {
-      const newComment = new CommentModel(req.body);
-      const { _id } = await newComment.save();
+  async (req, res, next) => {
+    try {
       const updatedBlogPost = await BlogModel.findByIdAndUpdate(
         req.params.blogPostId,
-        { $push: { comments: newComment } },
+        req.body,
         { new: true, runValidators: true }
       );
-      res.status(201).send({ _id });
-    } else {
-      next(
-        createHttpError(
-          404,
-          `BlogPost with Id ${req.params.blogPostId} not found`
-        )
-      );
+      if (updatedBlogPost) {
+        res.send(updatedBlogPost);
+      } else {
+        next(
+          createHttpError(
+            404,
+            `BlogPost wit id ${req.params.blogPostId} not found`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
-blogPostRouter.get("/:blogPostId/comments", async (req, res, next) => {
-  try {
-    const blogPost = await BlogModel.findById(req.params.blogPostId);
-    if (blogPost) {
-      res.send(blogPost.comments);
-    } else {
-      next(
-        createHttpError(
-          404,
-          `BlogPost with Id ${req.params.blogPostId} not found`
-        )
+);
+
+blogPostRouter.delete(
+  "/:blogPostId",
+  JWTAuthMiddleware,
+  adminOnlyMiddleware,
+  async (req, res, next) => {
+    try {
+      const deletedBlogPost = await BlogModel.findByIdAndDelete(
+        req.params.blogPostId
       );
+      if (deletedBlogPost) {
+        res.status(204).send("deleted");
+      } else {
+        next(
+          createHttpError(
+            404,
+            `BlogPost wit id ${req.params.blogPostId} not found`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
+
+blogPostRouter.post(
+  "/:blogPostId/comments",
+  JWTAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      const blogPost = await BlogModel.findById(req.params.blogPostId);
+      if (blogPost) {
+        const newComment = new CommentModel(req.body);
+        const { _id } = await newComment.save();
+        const updatedBlogPost = await BlogModel.findByIdAndUpdate(
+          req.params.blogPostId,
+          { $push: { comments: newComment } },
+          { new: true, runValidators: true }
+        );
+        res.status(201).send({ _id });
+      } else {
+        next(
+          createHttpError(
+            404,
+            `BlogPost with Id ${req.params.blogPostId} not found`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+blogPostRouter.get(
+  "/:blogPostId/comments",
+  JWTAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      const blogPost = await BlogModel.findById(req.params.blogPostId);
+      if (blogPost) {
+        res.send(blogPost.comments);
+      } else {
+        next(
+          createHttpError(
+            404,
+            `BlogPost with Id ${req.params.blogPostId} not found`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 blogPostRouter.get(
   "/:blogPostId/comments/:commentId",
   async (req, res, next) => {
@@ -153,6 +176,8 @@ blogPostRouter.get(
 );
 blogPostRouter.put(
   "/:blogPostId/comments/:commentId",
+  JWTAuthMiddleware,
+  commentCreatorMiddleware,
   async (req, res, next) => {
     try {
       const blogPost = await BlogModel.findById(req.params.blogPostId);
@@ -191,6 +216,8 @@ blogPostRouter.put(
 );
 blogPostRouter.delete(
   "/:blogPostId/comments/:commentId",
+  JWTAuthMiddleware,
+  adminOnlyMiddleware,
   async (req, res, next) => {
     try {
       console.log("delete triggered");
@@ -220,25 +247,31 @@ blogPostRouter.delete(
   }
 );
 
-blogPostRouter.get("/:blogPostId", async (req, res, next) => {
-  try {
-    const blogPost = await BlogModel.findById(req.params.blogPostId).populate({
-      path: "authors",
-      select: "firstName lastName",
-    });
-    if (blogPost) {
-      res.send(blogPost);
-    } else {
-      next(
-        createHttpError(
-          404,
-          `BlogPost wit id ${req.params.blogPostId} not found`
-        )
+blogPostRouter.get(
+  "/:blogPostId",
+  JWTAuthMiddleware,
+  async (req, res, next) => {
+    try {
+      const blogPost = await BlogModel.findById(req.params.blogPostId).populate(
+        {
+          path: "authors",
+          select: "firstName lastName",
+        }
       );
+      if (blogPost) {
+        res.send(blogPost);
+      } else {
+        next(
+          createHttpError(
+            404,
+            `BlogPost wit id ${req.params.blogPostId} not found`
+          )
+        );
+      }
+    } catch (error) {
+      next(error);
     }
-  } catch (error) {
-    next(error);
   }
-});
+);
 
 export default blogPostRouter;
