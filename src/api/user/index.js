@@ -9,19 +9,14 @@ import CommentModel from "../comments/model.js";
 import mongoose from "mongoose";
 const userRouter = express.Router();
 
-userRouter.get(
-  "/",
-  JWTAuthMiddleware,
-  adminOnlyMiddleware,
-  async (req, res, next) => {
-    try {
-      const users = await UsersModel.find();
-      res.send(users);
-    } catch (error) {
-      next(error);
-    }
+userRouter.get("/", JWTAuthMiddleware, async (req, res, next) => {
+  try {
+    const users = await UsersModel.find();
+    res.send(users);
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 userRouter.post("/", async (req, res, next) => {
   try {
