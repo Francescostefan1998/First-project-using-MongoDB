@@ -8,8 +8,37 @@ const googleStrategy = new GoogleStrategy(
     clientSecret: process.env.GOOGLE_SECRET,
     callbackURL: `${process.env.BE_URL}/users/googleRedirect`,
   },
-  (accesataoken, refresToken, profile, passportNext) => {
+  async (accesataoken, refresToken, profile, passportNext) => {
     console.log(profile);
+    try {
+      const { email, given_name, family_name } = profile._json;
+
+      const user = await UserModel.findOne({ email });
+      if (user) {
+        const accessToken = await createAccessToken({
+          _id: user._id,
+          role: user.role,
+        });
+        passportNext(null, { accessToken });
+      } else {
+        const newUser = new UserModel({
+          firstName: given_name,
+          lastName: family_name,
+          email,
+          googleId: profile.id,
+        });
+        const createdUser = await newUser.save();
+
+        const accessToken = await createAccessToken({
+          _id: createdUser._id,
+          role: createdUser.role,
+        });
+        passportNext(null, { accessToken });
+      }
+    } catch (error) {
+      console.log(error);
+      passportNext(error);
+    }
   }
 );
 

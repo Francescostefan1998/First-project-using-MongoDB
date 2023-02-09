@@ -36,7 +36,12 @@ userRouter.get(
 );
 userRouter.get(
   "/googleRedirect",
-  passport.authenticate("google", async (req, res, next) => {})
+  passport.authenticate("google", { session: false }),
+  async (req, res, next) => {
+    console.log(req.user);
+    res.send({ accessToken: req.user.accessToken });
+    // res.redirect(`${process.env.FE_URL}?accessToken=${req.user.accessToken}`);
+  }
 );
 
 userRouter.get("/me", JWTAuthMiddleware, async (req, res, next) => {
