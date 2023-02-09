@@ -39,8 +39,8 @@ userRouter.get(
   passport.authenticate("google", { session: false }),
   async (req, res, next) => {
     console.log(req.user);
-    res.send({ accessToken: req.user.accessToken });
-    // res.redirect(`${process.env.FE_URL}?accessToken=${req.user.accessToken}`);
+    //res.send({ accessToken: req.user.accessToken });
+    res.redirect(`${process.env.FE_URL}?accessToken=${req.user.accessToken}`);
   }
 );
 
