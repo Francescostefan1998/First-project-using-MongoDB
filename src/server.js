@@ -2,6 +2,7 @@ import express from "express";
 import listEndpoints from "express-list-endpoints";
 import cors from "cors";
 import mongoose from "mongoose";
+import passport from "passport";
 import {
   unauthorizedErrorHandler,
   badRequestHandler,
@@ -12,11 +13,15 @@ import blogPostRouter from "./api/blogPost/index.js";
 import commentRouter from "./api/comments/index.js";
 import authoorsRouter from "./api/authors/index.js";
 import userRouter from "./api/user/index.js";
+import googleStrategy from "./lib/auth/google.js";
 const server = express();
 const port = process.env.PORT || 3001;
 
+passport.use("google", googleStrategy);
+
 server.use(cors());
 server.use(express.json());
+server.use(passport.initialize());
 server.use("/blogs", blogPostRouter);
 server.use("/users", userRouter);
 

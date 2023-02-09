@@ -1,9 +1,10 @@
 import express from "express";
 import createHttpError from "http-errors";
+import passport from "passport";
 import { adminOnlyMiddleware } from "../../lib/auth/adminOnly.js";
 import { JWTAuthMiddleware } from "../../lib/auth/jwtAuth.js";
 import { createAccessToken } from "../../lib/auth/tools.js";
-
+import googleStrategy from "../../lib/auth/google.js";
 import UsersModel from "./model.js";
 import CommentModel from "../comments/model.js";
 import mongoose from "mongoose";
@@ -28,6 +29,15 @@ userRouter.post("/", async (req, res, next) => {
     next(error);
   }
 });
+
+userRouter.get(
+  "/googleLogin",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+userRouter.get(
+  "/googleRedirect",
+  passport.authenticate("google", async (req, res, next) => {})
+);
 
 userRouter.get("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
