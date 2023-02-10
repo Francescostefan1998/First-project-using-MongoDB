@@ -43,6 +43,7 @@ userRouter.get(
     res.redirect(`${process.env.FE_URL}?accessToken=${req.user.accessToken}`);
   }
 );
+//b
 
 userRouter.get("/me", JWTAuthMiddleware, async (req, res, next) => {
   try {
